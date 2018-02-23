@@ -26,7 +26,12 @@ int creerArbreSequence( Arbre *arbre, int *buffer );
 int construitArbreQuelconque( Arbre *a, FILE *in );
 int noeudQuelconque ( Arbre *a, int *buffer );
 void ecritArbreQuelconque( Arbre a, FILE *out );
-
+Arbre recherche( Arbre a, int n );
+int ajout( Arbre *a, int n );
+Arbre extraitMin( Arbre *a );
+Arbre extraitMax( Arbre *a );
+Arbre extrait( Arbre a, int n );
+void afficheArbreJoli(Arbre a, int niv);
 
 int main(int argc, char *argv[]) {
   
@@ -39,7 +44,6 @@ int main(int argc, char *argv[]) {
   printf("Parcours en profondeur : ");
   deepSearchPrefix( arbre );
   printf("\n");
-  shallowSearch( arbre );
   fclose(file);
   
   /* 2 */
@@ -47,7 +51,33 @@ int main(int argc, char *argv[]) {
   ecritArbreQuelconque( arbre, file);
   fclose(file);
   
-	  
+  /* 3 */
+  printf("Recherche de 5 : %d\n", recherche(arbre, 5)->etiquette);
+  printf("Recherche de 0 : %d\n", recherche(arbre, 0) || -0);
+  printf("Recherche de 1 : %d\n", recherche(arbre, 1)->etiquette);
+  printf("Recherche de -7 : %d\n", recherche(arbre, -7) || -0);
+  printf("Recherche de 11 : %d\n", recherche(arbre, 11)->etiquette);
+  printf("Recherche de 18 : %d\n", recherche(arbre, 18) || -0);
+  
+  /* 4 */
+  ajout( &arbre, 3);
+  ajout( &arbre, 7);
+  ajout( &arbre, 24);
+  ajout( &arbre, -6);
+  ajout( &arbre, -59);
+  ajout( &arbre, -58);
+  ajout( &arbre, -57);
+  ajout( &arbre, 14);
+  ajout( &arbre, 17);
+  
+  afficheArbreJoli(arbre, 0);
+  
+  printf("Extraction : %d\n", extrait( arbre, 24 )->etiquette);
+  printf("Extraction : %d\n", extrait( arbre, 89 ) || 0);
+  printf("Extraction : %d\n", extrait( arbre, 2 )->etiquette); 
+  
+  afficheArbreJoli(arbre, 0);  
+  
 	return 0;
 }
 
@@ -61,7 +91,7 @@ int construitArbreQuelconque( Arbre *a, FILE *in ) {
     id++;
   }
   
-  /* Transform datas */
+  /* Create the tree from the data */
   printf("\n");
   noeudQuelconque( a, buffer );
   
@@ -69,7 +99,6 @@ int construitArbreQuelconque( Arbre *a, FILE *in ) {
 }
 int noeudQuelconque ( Arbre *a, int *buffer ) {
   int res_fg, res_fd;
-  printf("Current : %d\n", *buffer);
   if ( *buffer == 3 ) {
     *a = creerArbre( *(buffer + 1));
     res_fg = noeudQuelconque( &((*a)->fg), buffer+2 );
@@ -92,7 +121,6 @@ int noeudQuelconque ( Arbre *a, int *buffer ) {
   }
   
 }
-
 void ecritArbreQuelconque( Arbre a, FILE *out ) {  
   if ( a ) {
     if ( a->fg && a->fd ) {
@@ -104,12 +132,110 @@ void ecritArbreQuelconque( Arbre a, FILE *out ) {
     } else {
       fprintf(out, "0 ");
     }
-    fprintf(out, "%d ",a->etiquette );
     ecritArbreQuelconque( a->fg, out );
     ecritArbreQuelconque( a->fd, out );
   }
 }
 
+void afficheArbreJoli(Arbre a, int niv) {
+/* 
+  Affiche l'arbre a sous la forme d'une arborescence (fg en haut, fd en bas)
+  Pour appeller le dessin de l'arbre a, taper "afficherArbJoli(a,0);" dans votre main
+*/
+  int i = 0;
+  for (i=0; i<niv; i++) {
+    printf("| ");
+  }
+  if (a == NULL)
+    printf("NULL\n");
+  else {
+    printf("%d\n", a->etiquette);
+    afficheArbreJoli(a->fg, 1 + niv);
+    afficheArbreJoli(a->fd, 1 + niv);
+  }
+}
+
+Arbre recherche( Arbre a, int n ) {
+  if ( !a ) {
+    return NULL;
+  } else {
+    if ( a->etiquette == n ) return a;
+    else return a->etiquette < n ? recherche( a->fd, n ) : recherche( a->fg, n );
+  }
+}
+int ajout( Arbre *a, int n ) {
+  if ( !(*a) ) {
+    Arbre tmp = creerArbre( n );
+    *a = tmp;
+    return 0;
+  } else {
+    if ( (*a)->etiquette != n ) {
+      (*a)->etiquette < n ? 
+        ajout( &((*a)->fd), n ): 
+        ajout( &((*a)->fg), n );    
+    }
+    return 1;
+  }
+}
+Arbre extraitMin( Arbre *a ) {
+  if ( (*a)->fg != NULL ) {
+    return extraitMin( &((*a)->fg) );
+  }
+  else {
+    Arbre tmp = *a;
+    *a = (*a)->fd;    
+    return tmp;
+  }    
+}
+Arbre extraitMax( Arbre *a ) {
+  if ( (*a)->fd != NULL ) {
+    return extraitMin( &((*a)->fd) );
+  }
+  else {
+    Arbre tmp = *a;
+    *a = (*a)->fg;    
+    return tmp;
+  }    
+}
+Arbre extrait( Arbre a, int n ) {
+  Arbre *found = NULL;
+  Arbre node = NULL;
+  Arbre new = NULL;
+  
+  if ( !a ) {
+    return NULL;
+  } else {
+    if ( a->etiquette == n ) {
+      found = &a;
+    } else if ( a->fg && a->fg->etiquette == n ) {
+      found = &(a->fg);
+    } else if ( a->fd && a->fd->etiquette == n ) {
+      found = &(a->fd);      
+    }
+    
+    if ( found ) {
+      node = *found;
+      if ( node->fg == NULL && node->fd == NULL ) {
+        *found = NULL;
+      } else if ( node->fg == NULL ) {
+        new = extraitMax( &(node->fd) );
+      } else {
+        new = extraitMin( &(node->fg) );
+      }
+      if ( new ) {
+        printf("new:%d  __ ", new->etiquette);
+        new->fg = node->fg;
+        new->fd = node->fd;
+      }
+      *found = new;
+      return node;
+    } else {
+      return a->etiquette < n ? 
+        extrait( a->fd, n ): 
+        extrait( a->fg, n );
+    } 
+  }
+}
 
 /* OLD */
 Arbre creerArbre( int e ) {
@@ -188,9 +314,7 @@ void deepSearchSuffix( Arbre a ) {
 }
 void shallowSearch( Arbre a ) {
   printf(" > Parcours en Niveaux : ");
-
-  Arbre *arbres = NULL;
-  arbres = &a;
+  Arbre *arbres = &a;
   
   while ( *arbres ) {
     printf("%d,", (*arbres)->etiquette);
@@ -198,7 +322,7 @@ void shallowSearch( Arbre a ) {
     ajouterFin( *arbres, (*arbres)->fd);
     *arbres = (*arbres)->suiv;
   }
-  
+    
   printf("\n");
 }
 void ajouterFin( Arbre list, Arbre ajout ) {
