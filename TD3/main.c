@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define FILENAME "tree.txt"
-
 typedef struct noeud {
   int etiquette;
   struct noeud *fg, *fd, *suiv;
 } Noeud, *Arbre;
 
 Arbre creerArbre( int e );
+
+/* OLD */
 int max (int a, int b);
 int hauteur( Arbre a );
 int nbNoeuds( Arbre a );
@@ -22,16 +22,24 @@ void deepSearchSuffix( Arbre a );
 void shallowSearch( Arbre a );
 void ajouterFin( Arbre list, Arbre ajout );
 int estHG ( Arbre a );
-int creerArbreSequence( Arbre *arbre, int *buffer );
-int construitArbreQuelconque( Arbre *a, FILE *in );
-int noeudQuelconque ( Arbre *a, int *buffer );
-void ecritArbreQuelconque( Arbre a, FILE *out );
+
+/* Ce TP */
 Arbre recherche( Arbre a, int n );
 int ajout( Arbre *a, int n );
 Arbre extraitMin( Arbre *a );
 Arbre extraitMax( Arbre *a );
-Arbre extrait( Arbre a, int n );
+Arbre extrait( Arbre *a, int n );
 void afficheArbreJoli(Arbre a, int niv);
+int estABR ( Arbre a, Arbre dernierVisite );
+
+/* I/O */
+int creerArbreSequence( Arbre *arbre, int *buffer );
+int construitArbreQuelconque( Arbre *a, FILE *in );
+void ecritArbreQuelconque( Arbre a, FILE *out );
+int noeudQuelconque ( Arbre *a, int *buffer );
+int rec_dot_export(Arbre a, int nodeID, FILE *dot_file);
+void dot_export(Arbre a, FILE *dot_file);
+void free_arbre(Arbre a);
 
 int main(int argc, char *argv[]) {
   
@@ -39,7 +47,7 @@ int main(int argc, char *argv[]) {
   Arbre arbre = NULL;
   
   /* 1 */
-  file = fopen(FILENAME, "r");
+  file = fopen("tree.txt", "r");
   construitArbreQuelconque(&arbre, file);
   printf("Parcours en profondeur : ");
   deepSearchPrefix( arbre );
@@ -70,13 +78,19 @@ int main(int argc, char *argv[]) {
   ajout( &arbre, 14);
   ajout( &arbre, 17);
   
-  afficheArbreJoli(arbre, 0);
   
-  printf("Extraction : %d\n", extrait( arbre, 24 )->etiquette);
-  printf("Extraction : %d\n", extrait( arbre, 89 ) || 0);
-  printf("Extraction : %d\n", extrait( arbre, 2 )->etiquette); 
+  printf("Extraction (17): %d\n", extrait( &arbre, 17 )->etiquette); 
+  printf("Extraction (-58): %d\n", extrait( &arbre, -58 )->etiquette); 
+  printf("Extraction (-6): %d\n", extrait( &arbre, -6 )->etiquette); 
+  printf("Extraction (5): %d\n", extrait( &arbre, 5 )->etiquette); 
   
-  afficheArbreJoli(arbre, 0);  
+  printf("\nEst ABR ? %d\n", estABR(arbre, NULL));
+  
+  file = fopen("tree.dot", "w+");
+  dot_export( arbre, file );
+  fclose(file);
+  free_arbre( arbre );
+  
   
 	return 0;
 }
@@ -136,6 +150,36 @@ void ecritArbreQuelconque( Arbre a, FILE *out ) {
     ecritArbreQuelconque( a->fd, out );
   }
 }
+int rec_dot_export(Arbre a, int nodeID, FILE *dot_file) {
+  int val, res_fg=0, res_fd=0;
+  if (a != NULL) {
+    val = a->etiquette;
+    fprintf(dot_file, "\tn%d [label=\"<gauche> | <valeur> %d | <droit>\"];\n", nodeID, val);
+  }
+  if (a->fg != NULL) {
+    fprintf(dot_file, "\tn%d:gauche:c -> n%d:valeur;\n", nodeID, nodeID+1);
+    res_fg = rec_dot_export(a->fg, nodeID+1, dot_file);
+  }
+  if (a->fd != NULL) {
+    fprintf(dot_file, "\tn%d:droit:c -> n%d:valeur;\n", nodeID, nodeID+res_fg+1);
+    res_fd = rec_dot_export(a->fd, nodeID+res_fg+1, dot_file);
+  }
+  return res_fg+res_fd+1;
+}
+void dot_export(Arbre a, FILE *dot_file) {
+  fprintf(dot_file, "digraph arbre {\n");
+  fprintf(dot_file, "\tnode [shape=record,height=.1]\n");
+  fprintf(dot_file, "\tedge [tailclip=false,arrowtail=dot,dir=both]\n");
+  rec_dot_export(a, 0, dot_file);
+  fprintf(dot_file, "}\n");
+}
+void free_arbre(Arbre a) {
+  if (a != NULL) {
+    free_arbre(a->fg);
+    free_arbre(a->fd);
+    free(a);
+  }
+}
 
 void afficheArbreJoli(Arbre a, int niv) {
 /* 
@@ -154,7 +198,6 @@ void afficheArbreJoli(Arbre a, int niv) {
     afficheArbreJoli(a->fd, 1 + niv);
   }
 }
-
 Arbre recherche( Arbre a, int n ) {
   if ( !a ) {
     return NULL;
@@ -197,43 +240,50 @@ Arbre extraitMax( Arbre *a ) {
     return tmp;
   }    
 }
-Arbre extrait( Arbre a, int n ) {
-  Arbre *found = NULL;
-  Arbre node = NULL;
-  Arbre new = NULL;
+Arbre extrait( Arbre *a, int n ) {
+  Arbre tmp = NULL;
   
   if ( !a ) {
     return NULL;
   } else {
-    if ( a->etiquette == n ) {
-      found = &a;
-    } else if ( a->fg && a->fg->etiquette == n ) {
-      found = &(a->fg);
-    } else if ( a->fd && a->fd->etiquette == n ) {
-      found = &(a->fd);      
+    if ( (*a)->etiquette == n ) {      
+      tmp = *a;
+      
+      /* CAS 1 : 2 Feuilles */
+      if ( (*a)->fg == NULL && (*a)->fd == NULL ) {
+        *a = NULL;
+      }
+      /* CAS 2 : 1 Feuille : fg */
+      else if ( (*a)->fg != NULL && (*a)->fd == NULL ) {
+        *a = (*a)->fg;
+      }
+      /* CAS 2 BIS : 1 Feuille : fd */
+      else if ( (*a)->fd != NULL && (*a)->fg == NULL ) {
+        *a = (*a)->fd;
+      }
+      /* CAS 3 : 2 Fils */
+      else {
+        /* On récupère le maximum, on pourrait aussi faire pareil avec le minimum */
+        Arbre max = extraitMax( &((*a)->fg) );
+        
+        /* On copie les enfants de l'arbre trouvé qu'il faut supprimer dans le maximum */
+        max->fg = (*a)->fg;
+        max->fd = (*a)->fd;
+        
+        /* On remplace l'arbre par le maximum */
+        *a = max;
+      }     
+      return tmp;
     }
-    
-    if ( found ) {
-      node = *found;
-      if ( node->fg == NULL && node->fd == NULL ) {
-        *found = NULL;
-      } else if ( node->fg == NULL ) {
-        new = extraitMax( &(node->fd) );
-      } else {
-        new = extraitMin( &(node->fg) );
-      }
-      if ( new ) {
-        printf("new:%d  __ ", new->etiquette);
-        new->fg = node->fg;
-        new->fd = node->fd;
-      }
-      *found = new;
-      return node;
-    } else {
-      return a->etiquette < n ? 
-        extrait( a->fd, n ): 
-        extrait( a->fg, n );
-    } 
+    /* RECHERCHE DE L'ELEMENT */
+    else return (*a)->etiquette < n ? extrait( &((*a)->fd), n ) : extrait( &((*a)->fg), n );
+  }    
+}
+int estABR ( Arbre a, Arbre dernierVisite ) {
+  if ( a ) {
+    estABR( a->fg, dernierVisite );
+    printf("%d,", a->etiquette);
+    estABR( a->fd, dernierVisite );
   }
 }
 
