@@ -7,45 +7,46 @@ typedef struct tnoeud {
   char lettre;
   struct tnoeud *frg, *frd;
   struct tnoeud *fils;
-} TNoeud, *Tarbre;
+} TNoeud, *TArbre;
 
 
 /* CE TP */
-void affiche( Tarbre a );
-int recherche( Tarbre a, char *m );
-int nombreMot( Tarbre a );
-int ajouteMot( Tarbre *a, char *m );
+void affiche( TArbre a );
+int recherche( TArbre a, char *m );
+int nombreMot( TArbre a );
+int ajouteMot( TArbre *a, char *m );
+TArbre creerArbre( char c );
 
 /* I/O */
-int rec_dot_export(Tarbre a, int nodeID, FILE *dot_file);
-void dot_export(Tarbre a, FILE *dot_file);
-void free_arbre(Tarbre a);
+int rec_dot_export(TArbre a, int nodeID, FILE *dot_file);
+void dot_export(TArbre a, FILE *dot_file);
+void free_arbre(TArbre a);
 
 /* MAIN */
 int main(int argc, char *argv[]) {
   
-  /*FILE *file;*/
-  Tarbre arbre = NULL;
+  FILE *file;
+  TArbre arbre = NULL;
   
   ajouteMot( &arbre, "chat");
   
   
   
   /* FERMETURE */
-  /*
+  
   file = fopen("tree.dot", "w+");
   dot_export( arbre, file );
   fclose(file);
+  /*
   free_arbre( arbre );
   */
-  
 	return 0;
 }
 
 /* ______________ FUNCTION DEF ___________________ */
 
-
-int rec_dot_export(Tarbre a, int nodeID, FILE *dot_file) {
+/* I/O */
+int rec_dot_export(TArbre a, int nodeID, FILE *dot_file) {
   int res_frg=0, res_frd=0, res_fils=0;
   char val;
   if (a != NULL) {
@@ -66,14 +67,14 @@ int rec_dot_export(Tarbre a, int nodeID, FILE *dot_file) {
   }
   return res_frg+res_frd+res_fils+1;
 }
-void dot_export(Tarbre a, FILE *dot_file) {
+void dot_export(TArbre a, FILE *dot_file) {
   fprintf(dot_file, "digraph arbre {\n");
   fprintf(dot_file, "\tnode [shape=record,height=.1]\n");
   fprintf(dot_file, "\tedge [tailclip=false,arrowtail=dot,dir=both]\n");
   rec_dot_export(a, 0, dot_file);
   fprintf(dot_file, "}\n");
 }
-void free_arbre(Tarbre a) {
+void free_arbre(TArbre a) {
   if (a != NULL) {
     free_arbre(a->frg);
     free_arbre(a->frd);
@@ -82,14 +83,38 @@ void free_arbre(Tarbre a) {
   }
 }
 
-int recherche( Tarbre a, char *m ) {
+int recherche( TArbre a, char *m ) {
   /* TODO */
   
   
+  return 1;
 }
-int ajouteMot( Tarbre *a, char *m ) {
+int ajouteMot( TArbre *a, char *m ) {
   /* TODO */
+  printf("%s\n", m);
+  if ( *m == '\0' ) {
+    if ( *a == NULL ) {
+      /*
+        Le noeud ne possède pas de lettre 
+        -> on l'ajoute
+      */
+      TArbre new = creerArbre( *m );
+      a = &new;
+      return ajouteMot(&((*a)->fils), m+1);    
+    }
+  }
   
-  
-  
+  return 1;
+}
+TArbre creerArbre( char c ) {
+  TNoeud *tmp = (TNoeud*) malloc( sizeof( TNoeud ) );
+  if ( !tmp ) {
+    printf("Erreur allocation mémoire\n");
+    exit(0);
+  }
+  tmp->lettre = c;
+  tmp->frg = NULL;
+  tmp->frd = NULL;
+  tmp->fils = NULL;
+  return tmp;
 }

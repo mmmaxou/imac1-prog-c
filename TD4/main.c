@@ -397,6 +397,7 @@ Arbre creerArbre( int e ) {
   tmp->fg = NULL;
   tmp->fd = NULL;
   tmp->suiv = NULL;
+  tmp->prec = NULL;
   return tmp;
 }
 int hauteur( Arbre a ) {
