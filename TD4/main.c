@@ -1,12 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define TAILLE 100
 
 typedef struct noeud {
   int etiquette;
-  struct noeud *fg, *fd, *suiv;
+  struct noeud *fg, *fd, *suiv, *prec;
 } Noeud, *Arbre;
 
+typedef struct doublelist {
+	Arbre premier;
+	Arbre dernier;	
+	int taille;
+} UListe;
 Arbre creerArbre( int e );
 
 /* OLD */
@@ -22,8 +28,6 @@ void deepSearchSuffix( Arbre a );
 void shallowSearch( Arbre a );
 void ajouterFin( Arbre list, Arbre ajout );
 int estHG ( Arbre a );
-
-/* Ce TP */
 Arbre recherche( Arbre a, int n );
 int ajout( Arbre *a, int n );
 Arbre extraitMin( Arbre *a );
@@ -32,6 +36,13 @@ Arbre extrait( Arbre *a, int n );
 void afficheArbreJoli(Arbre a, int niv);
 int estABR_rec ( Arbre a, Arbre *visited );
 int estABR ( Arbre a );
+
+/* Ce TP */
+void afficherChemins( Arbre a );
+void afficherChemins_rec ( Arbre a, UListe *path );
+void ajouterFinUListe ( UListe *liste , Arbre a );
+void afficherUListe ( UListe *liste );
+int supprimerUListe ( UListe * liste, int etiquette );
 
 /* I/O */
 int creerArbreSequence( Arbre *arbre, int *buffer );
@@ -48,46 +59,20 @@ int main(int argc, char *argv[]) {
   FILE *file;
   Arbre arbre = NULL;
   
-  /* 1 */
+  /* OUVERTURE */
   file = fopen("tree.txt", "r");
   construitArbreQuelconque(&arbre, file);
-  printf("Parcours en profondeur : ");
-  deepSearchPrefix( arbre );
-  printf("\n");
   fclose(file);
+  
+  /* 1 */
+  /*printf(" Est ABR ? %d\n", estABR( arbre ));*/
   
   /* 2 */
-  file = fopen("TEMP.txt", "w+");
-  ecritArbreQuelconque( arbre, file);
-  fclose(file);
-  
-  /* 3 */
-  printf("Recherche de 5 : %d\n", recherche(arbre, 5)->etiquette);
-  printf("Recherche de 0 : %d\n", recherche(arbre, 0) || -0);
-  printf("Recherche de 1 : %d\n", recherche(arbre, 1)->etiquette);
-  printf("Recherche de -7 : %d\n", recherche(arbre, -7) || -0);
-  printf("Recherche de 11 : %d\n", recherche(arbre, 11)->etiquette);
-  printf("Recherche de 18 : %d\n", recherche(arbre, 18) || -0);
-  
-  /* 4 */
-  ajout( &arbre, 3);
-  ajout( &arbre, 7);
-  ajout( &arbre, 24);
-  ajout( &arbre, -6);
-  ajout( &arbre, -59);
-  ajout( &arbre, -58);
-  ajout( &arbre, -57);
-  ajout( &arbre, 14);
-  ajout( &arbre, 17);
+  afficherChemins( arbre );
   
   
-  printf("Extraction (17): %d\n", extrait( &arbre, 17 )->etiquette); 
-  printf("Extraction (-58): %d\n", extrait( &arbre, -58 )->etiquette); 
-  printf("Extraction (-6): %d\n", extrait( &arbre, -6 )->etiquette); 
-  printf("Extraction (5): %d\n", extrait( &arbre, 5 )->etiquette); 
   
-  printf("\nEst ABR ? %d\n", estABR(arbre));
-  
+  /* FERMETURE */
   file = fopen("tree.dot", "w+");
   dot_export( arbre, file );
   fclose(file);
@@ -98,6 +83,100 @@ int main(int argc, char *argv[]) {
 }
 
 /* ______________ FUNCTION DEF ___________________ */
+
+void afficherChemins_rec ( Arbre a, UListe *path ) {
+  if ( a ) {
+    ajouterFinUListe( path, a );
+    if( a->fg == NULL && a->fd == NULL ) {
+      afficherUListe( path );
+    }
+    afficherChemins_rec( a->fg, path );
+    afficherChemins_rec( a->fd, path );
+    supprimerUListe( path, path->dernier->etiquette );
+  }
+}
+
+void afficherChemins( Arbre a ) {
+  UListe path;
+  path.premier = NULL;
+  path.dernier = NULL;
+  path.taille = 0;
+  if ( a ) {
+    ajouterFinUListe( &path, a );
+    if( a->fg == NULL && a->fd == NULL ) {
+      afficherUListe( &path );
+    }
+    afficherChemins_rec( a->fg, &path );
+    afficherChemins_rec( a->fd, &path );
+    supprimerUListe( &path, path.dernier->etiquette );
+  }
+}
+
+/*
+	Ajoute un arbre au début de la liste doublement chainée
+*/
+void ajouterFinUListe ( UListe *liste , Arbre a ) {
+	
+	if ( liste->taille == 0 ) {
+		liste->premier = a;
+		liste->dernier = a;		
+	} else {
+		liste->dernier->suiv = a;
+		a->prec = liste->dernier;
+		liste->dernier = a;
+	}
+	
+	liste->taille++;
+}
+
+
+/*
+	Affiche la liste Tile	
+*/
+void afficherUListe ( UListe *liste ) {
+	Arbre actuel = liste->premier;
+  while ( actuel != NULL ) {
+    printf("%d -> ", actuel->etiquette);
+    actuel = actuel->suiv;
+  }
+  printf("NULL\n");
+}
+
+/*
+	Supprime une unite de la liste doublement chainée Tile
+	L'unite a supprimer est identifiée par son id
+*/
+int supprimerUListe ( UListe * liste, int etiquette ) {
+	Arbre tmp = liste->premier;
+	int found = 0;
+	
+	while ( tmp != NULL && !found ) {
+		if ( tmp->etiquette == etiquette ) {
+			if ( liste->taille == 1 ) {
+				liste->premier = NULL;	
+				liste->dernier = NULL;
+			} else if ( tmp->suiv == NULL ) {
+				liste->dernier = tmp->prec;
+				liste->dernier->suiv = NULL;
+			} else if ( tmp->prec == NULL ) {
+				liste->premier = tmp->suiv;
+				liste->premier->prec = NULL;				
+			} else {
+				tmp->suiv->prec = tmp->prec;
+				tmp->prec->suiv = tmp->suiv;
+			}
+			found = 1;
+			liste->taille--;
+		} else {
+			tmp = tmp->suiv;
+		}
+	}
+	
+	return 1;	
+}
+
+
+/* ______________ OLD ___________________ */
 
 int construitArbreQuelconque( Arbre *a, FILE *in ) {
   int buffer[255];
@@ -184,7 +263,6 @@ void free_arbre(Arbre a) {
     free(a);
   }
 }
-
 void afficheArbreJoli(Arbre a, int niv) {
 /* 
   Affiche l'arbre a sous la forme d'une arborescence (fg en haut, fd en bas)
@@ -302,8 +380,6 @@ int estABR ( Arbre a ) {
   }
   return 1;
 }
-
-/* OLD */
 Arbre creerArbre( int e ) {
   Noeud * tmp = (Noeud*) malloc( sizeof( Noeud ) );
   if ( !tmp ) {
