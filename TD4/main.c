@@ -8,12 +8,6 @@ typedef struct noeud {
   struct noeud *fg, *fd, *suiv, *prec;
 } Noeud, *Arbre;
 
-typedef struct tnoeud {
-  char lettre;
-  struct noeud *frg, *frd;
-  struct noeud *fils;
-} TNoeud, *Tarbre;
-
 typedef struct doublelist {
 	Arbre premier;
 	Arbre dernier;	
