@@ -15,6 +15,7 @@ int ajout(Tas *t, int valeur);
 int estTas(int tab[], int taille);
 int fils(Tas T, int indice);
 void change(Tas *T, int indice, int valeur);
+void echangerPlaces(Tas *T, int indice);
 int ajout(Tas *T, int valeur);
 int extraireMin(Tas *T);
 
@@ -32,13 +33,11 @@ int main(int argc, char *argv[]) {
     tas.taille += 1;
   }
   afficherTas(tas);
-  
   /* Verification */
   printf( " > Est un tas ? %d\n", estTas(tas.arbre, tas.taille));
   
   /* Fils */
   printf( " > Fils de %d : %d\n", tas.arbre[1], fils(tas, 1));
-  printf( " > Fils de %d : %d\n", tas.arbre[2], fils(tas, 2));
   
   /* Change */
   change(&tas, 9, 1);
@@ -48,9 +47,12 @@ int main(int argc, char *argv[]) {
   
   /* Ajout */
   ajout(&tas, 99);
+  afficherTas(tas);
+  
   ajout(&tas, 65);
   afficherTas(tas);
   
+  printf( " > Est un tas ? %d\n", estTas(tas.arbre, tas.taille));
   
    /* FERMETURE */
 	return 0;
@@ -79,8 +81,7 @@ int estTas(int tab[], int taille) {
   }
   return valid;
 }
-int fils(Tas T, int indice) {
-  
+int fils(Tas T, int indice) {  
   int fils_min, fg, fd;
   fg = (2*indice)+1;
   fd = (2*indice)+2;
@@ -97,16 +98,19 @@ int fils(Tas T, int indice) {
   return fils_min;
 }
 void change(Tas *T, int indice, int valeur) {
-  int p, f, tmp;
-  
   /* On verifie que indice est inferieure à la taille du tas */
   if (indice > T->taille) {
     printf("L'indice donné est supérieur à la taille du tas\n");
     return;
   }
   
-  /* On effectue le changement */
+  /* On effectue le chan(f != -1gement */
   T->arbre[indice] = valeur;
+  echangerPlaces(T, indice);
+}
+
+void echangerPlaces(Tas *T, int indice) {
+   int p, f, tmp;
   
   /* On vérifie que les parents soient plus petits */
   p = indiceParent(indice);
@@ -119,11 +123,13 @@ void change(Tas *T, int indice, int valeur) {
     /* On change les valeurs du parent et de l'indice */
     indice = indiceParent(indice);
     p = indiceParent(indice);
+    echangerPlaces(p);
   }
   
   /* On vérifie que les fils soient plus grands */
   f = fils(*T, indice);
-  while (f != -1 && T->arbre[f] < T->arbre[indice]) {
+  printf("Fils:%d | indice:%d\n", T->arbre[f], T->arbre[indice]);
+  while (f != -1 && (T->arbre[f] < T->arbre[indice])) {
     printf("Fils:%d | indice:%d\n", T->arbre[f], T->arbre[indice]);
     tmp = T->arbre[indice];
     T->arbre[indice] = T->arbre[f];
@@ -131,15 +137,16 @@ void change(Tas *T, int indice, int valeur) {
     
     /* On change les valeurs du parent et de l'indice */
     indice = fils(*T, indice);
-    p = fils(*T, indice);
+    f = fils(*T, indice);
+    echangerPlaces(f);
   }
-
 }
+
 int ajout(Tas *T, int valeur) {
   /* ERROR */
   if (T->taille + 1 < MAX) {
-    T->taille += 1;    
-    change(T, T->taille, valeur);
+    T->taille += 1;
+    change(T, T->taille-1, valeur);
     return 1;
   } else {
     return 0;
