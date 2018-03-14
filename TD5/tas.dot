@@ -1,6 +1,0 @@
-digraph arbre {
-  node [shape=record, height=.1]
-edge [tailclip=false, arrowtail=dot, dir=both];
-
-
-}
