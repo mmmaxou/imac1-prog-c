@@ -81,6 +81,8 @@ int enumTas(int T[], int premier, int n) {
         i++;
       }
       if ( i != n ) {
+        /* GROSSE OPTIMIZATION */ 
+        /* TEST PARENT / 2 ENFANTS / BORNES / !=0  */
         T[i] = premier;
         
         /* if ( estTas_partiel(T, n) ) */
