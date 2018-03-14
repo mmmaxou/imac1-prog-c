@@ -18,7 +18,7 @@ void change(Tas *T, int indice, int valeur);
 void echangerPlaces(Tas *T, int indice);
 int ajout(Tas *T, int valeur);
 int extraireMin(Tas *T);
-
+void triTas(int T[], int taille);
 
 /* ______________ MAIN ______________ */
 int main(int argc, char *argv[]) {
@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
   /* CREATION DU TAS */
   Tas tas;
   tas.taille = 0;
+  int tab[MAX] = {1,25,2,5418,4,91,65,1,6874,94,91,261,4198,69};
   for (i=0; i<10; i++) {
     tas.arbre[i] = 3*i;
     tas.taille += 1;
@@ -41,18 +42,19 @@ int main(int argc, char *argv[]) {
   
   /* Change */
   change(&tas, 9, 1);
-  afficherTas(tas);  
   change(&tas, 1, 61);
-  afficherTas(tas);
   
   /* Ajout */
   ajout(&tas, 99);
-  afficherTas(tas);
-  
   ajout(&tas, 65);
   afficherTas(tas);
   
-  printf( " > Est un tas ? %d\n", estTas(tas.arbre, tas.taille));
+  extraireMin(&tas);
+  afficherTas(tas);
+  
+  /* TRI PAR TAS */
+  triTas(tab, MAX);
+  
   
    /* FERMETURE */
 	return 0;
@@ -108,40 +110,46 @@ void change(Tas *T, int indice, int valeur) {
   T->arbre[indice] = valeur;
   echangerPlaces(T, indice);
 }
-
 void echangerPlaces(Tas *T, int indice) {
    int p, f, tmp;
   
   /* On vérifie que les parents soient plus petits */
   p = indiceParent(indice);
   while (T->arbre[p] > T->arbre[indice]) {
+    /*
     printf("Parent:%d | indice:%d\n", T->arbre[p], T->arbre[indice]);
+    */
     tmp = T->arbre[indice];
     T->arbre[indice] = T->arbre[p];
     T->arbre[p] = tmp;
     
+    /* On change de place le parent */
+    echangerPlaces(T, p);
+    
     /* On change les valeurs du parent et de l'indice */
     indice = indiceParent(indice);
     p = indiceParent(indice);
-    echangerPlaces(p);
+    
   }
   
   /* On vérifie que les fils soient plus grands */
   f = fils(*T, indice);
-  printf("Fils:%d | indice:%d\n", T->arbre[f], T->arbre[indice]);
   while (f != -1 && (T->arbre[f] < T->arbre[indice])) {
+    /*
     printf("Fils:%d | indice:%d\n", T->arbre[f], T->arbre[indice]);
+    */
     tmp = T->arbre[indice];
     T->arbre[indice] = T->arbre[f];
     T->arbre[f] = tmp;
     
+    /* On change de place le fils */
+    echangerPlaces(T, f);
+    
     /* On change les valeurs du parent et de l'indice */
     indice = fils(*T, indice);
     f = fils(*T, indice);
-    echangerPlaces(f);
   }
 }
-
 int ajout(Tas *T, int valeur) {
   /* ERROR */
   if (T->taille + 1 < MAX) {
@@ -151,4 +159,45 @@ int ajout(Tas *T, int valeur) {
   } else {
     return 0;
   }
+}
+int extraireMin(Tas *T) {
+  /* On extrait le minimum */
+  int minimum = T->arbre[0];
+  
+  /* On supprime la derniere feuille et on met sa valeur à la racine */
+  int valeur = T->arbre[T->taille-1];
+  T->arbre[T->taille-1] = 0;
+  T->taille -= 1;
+  
+  /* On descend la valeur par echange avec le + petit fils */
+  change(T, 0, valeur);
+  
+  return minimum;
+}
+void triTas(int T[], int taille) {
+  int i;
+  Tas tritas;
+  tritas.taille = 0;
+  
+  /* On ajoute chaque valeurs du Tableau a un tas */
+  for( i=0; i<taille; i++ ) {
+    if ( T[i] != 0)
+      ajout(&tritas, T[i]);
+  }
+  afficherTas(tritas);
+  /* On extrait les valeurs du tas que l'on rajoute au tableau */
+  i=0;
+  while(tritas.taille != 0) {
+    int minimum = extraireMin(&tritas);
+    T[i] = minimum;
+    i++;
+  }
+  afficherTas(tritas);
+  
+  /* Affichage tab */
+  for( i=0; i<taille; i++ ) {
+    if ( T[i] != 0)
+      printf("%d, ", T[i]);
+  }
+  printf("\n");
 }
