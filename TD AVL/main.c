@@ -117,6 +117,16 @@ void rotationD(AVL *a) {
 	
 }
 
+void rotationGD(AVL *a) {
+	rotationG((*a)->fd);
+	rotationD(*a);
+}
+
+void rotationDG(AVL *a) { 
+	rotationD((*a)->fg);
+	rotationG(*a);	
+}
+
 /* Helper function for the first tree */
 int calcBalance(AVL a) {
 	if ( a ) {
